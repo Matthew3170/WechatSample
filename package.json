@@ -1,0 +1,17 @@
+{
+  "name": "nginx-wss-backend",
+  "version": "1.0.0",
+  "description": "A JWT-enabled command server for devices",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.1",
+    "body-parser": "^1.20.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
