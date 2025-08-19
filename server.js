@@ -39,6 +39,10 @@ wss.on('connection', (ws) => {
 
     if (data.type === 'result') {
       const { commandId, result = 'unknow', scanUrl = [], scanResult = 'unknow', machineStatus = 'unknow' } = data;
+      // 一行輸出主要資訊
+      console.log(`回傳結果 commandId: ${commandId}, result: ${result}, scanResult: ${scanResult}, machineStatus: ${machineStatus}`);
+      // 輸出 scanUrl 陣列，如果是空陣列會顯示 []
+      console.log('scanUrl:', JSON.stringify(scanUrl, null, 2));
       if (pendingResults.has(commandId)) {
         pendingResults.get(commandId)({
           commandId,
@@ -67,7 +71,10 @@ app.post('/send-command', async (req, res) => {
   const { deviceId, type, command, wechatId, url, size, dpi, duplex, mode } = req.body;
   const ws = deviceSockets.get(deviceId);
 
+  console.log(`收到命令 deviceId: ${deviceId}, type: ${type}, command: ${command}, wechatId: ${wechatId}, url: ${url}, size: ${size}, dpi: ${dpi}, duplex: ${duplex}, mode: ${mode}`);
+
   if (!ws || ws.readyState !== WebSocket.OPEN) {
+    console.log('設備不在線');
     return res.status(404).json({ error: '設備不在線' });
   }
 
@@ -84,6 +91,7 @@ app.post('/send-command', async (req, res) => {
     payload = { type, commandId, wechatId, command };
   }
 
+  console.log('執行命令:', JSON.stringify(payload, null, 2));
   ws.send(JSON.stringify(payload));
 
   try {
@@ -91,6 +99,7 @@ app.post('/send-command', async (req, res) => {
       pendingResults.set(commandId, resolve);
       setTimeout(() => {
         if (pendingResults.has(commandId)) {
+          console.log('timeout');
           pendingResults.delete(commandId);
           reject(new Error('timeout'));
         }
@@ -99,6 +108,7 @@ app.post('/send-command', async (req, res) => {
 
     res.json({ result });
   } catch (err) {
+    console.log('500, ', err.message);
     res.status(500).json({ error: err.message });
   }
 });
