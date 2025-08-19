@@ -21,7 +21,6 @@ const wss = new WebSocket.Server({ port: wssPort });
 wss.on('connection', (ws) => {
   console.log('新的設備連線進來');
 
-  // 期待設備先發送身份註冊
   ws.on('message', (msg) => {
     let data;
     try {
@@ -73,54 +72,35 @@ app.post('/send-command', async (req, res) => {
   }
 
   const commandId = `cmd-${commandCounter++}`;
-    let payload = {};
+  let payload = {};
 
-  if (data.type === 'print') {
-    payload = {
-      type,
-      commandId,
-      wechatId,
-      url,
-    };
-  } else if (data.type === 'scan') {
-    payload = {
-      type,
-      commandId,
-      wechatId,
-      size,
-      dpi,
-      duplex,
-      mode
-    };
-  } else if (data.type === 'status') {
-    payload = {
-      type,
-      commandId,
-      wechatId,
-    };
+  if (type === 'print') {
+    payload = { type, commandId, wechatId, url };
+  } else if (type === 'scan') {
+    payload = { type, commandId, wechatId, size, dpi, duplex, mode };
+  } else if (type === 'status') {
+    payload = { type, commandId, wechatId };
   } else {
-    payload = {
-      type,
-      commandId,
-      wechatId,
-      command
-    };
+    payload = { type, commandId, wechatId, command };
   }
 
   ws.send(JSON.stringify(payload));
 
-  // 等待設備回傳執行結果
-  const result = await new Promise(resolve => {
-    pendingResults.set(commandId, resolve);
+  try {
+    const result = await new Promise((resolve, reject) => {
+      pendingResults.set(commandId, resolve);
       setTimeout(() => {
         if (pendingResults.has(commandId)) {
           pendingResults.delete(commandId);
           reject(new Error('timeout'));
         }
       }, timeout);
-  });
+    });
 
-  res.json({ result });
+    res.json({ result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(port, () => {
